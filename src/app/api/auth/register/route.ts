@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import { prisma } from '@/src/libs/db'; // Import your database connection or ORM here
+import { prisma } from '@/lib/db'; // Import your database connection or ORM here
 import { NextResponse } from "next/server";
 
 export async function GET() {

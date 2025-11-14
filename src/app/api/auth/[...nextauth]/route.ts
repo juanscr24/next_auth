@@ -1,9 +1,35 @@
 import NextAuth from "next-auth";
 import CredentialProvider from "next-auth/providers/credentials";
-import { prisma } from "@/src/libs/db";
+import { prisma } from "@/lib/db";
 import bcrypt from "bcrypt";
 
+if (!process.env.NEXTAUTH_SECRET) {
+    throw new Error("NEXTAUTH_SECRET is not defined");
+}
+
 export const authOptions = {
+    secret: process.env.NEXTAUTH_SECRET,
+    useSecureCookies: process.env.NODE_ENV === "production",
+    session: {
+        strategy: "jwt" as const,
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+        updateAge: 24 * 60 * 60, // 24 hours
+    },
+    jwt: {
+        maxAge: 30 * 24 * 60 * 60,
+        secret: process.env.NEXTAUTH_SECRET,
+    },
+    cookies: {
+        sessionToken: {
+            name: `next-auth.session-token`,
+            options: {
+                httpOnly: true,
+                sameSite: 'lax',
+                path: '/',
+                secure: process.env.NODE_ENV === "production",
+            },
+        },
+    },
     providers: [
         CredentialProvider({
             name: "Credentials",
@@ -55,15 +81,18 @@ export const authOptions = {
             session: import("next-auth").Session;
             token: import("next-auth/jwt").JWT;
         }) {
-            session.user.id = token.id;
-            session.user.username = token.username;
-            session.user.email = token.email;
+            if (token) {
+                session.user.id = token.id as string;
+                session.user.username = token.username as string;
+                session.user.email = token.email as string;
+            }
             return session;
         },
     }
     ,
     pages: {
         signIn: '/login',
+        error: '/auth/error',
     }
 }
 
